@@ -8,6 +8,8 @@ class AutolocApiApplicationTests {
 
 	@Test
 	void contextLoads() {
+		// Vide volontairement : le test réussit si le contexte Spring démarre
+		// (connexion à la base, 9 repositories Spring Data créés).
 	}
 
 }
