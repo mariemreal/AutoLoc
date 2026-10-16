@@ -18,6 +18,8 @@ public interface IContratService {
     void deleteById(Long id);
 
     // Composition Contrat -> Paiement : un paiement se crée et se retire via son contrat
+    List<Paiement> findPaiements(Long idContrat);
+
     Paiement addPaiement(Long idContrat, Paiement paiement);
 
     void removePaiement(Long idContrat, Long idPaiement);

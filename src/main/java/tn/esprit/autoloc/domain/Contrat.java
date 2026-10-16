@@ -1,5 +1,6 @@
 package tn.esprit.autoloc.domain;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -32,12 +33,14 @@ public class Contrat {
     private boolean valide;
 
     // 1 Contrat <-> 1 Reservation (cote proprietaire : colonne reservation_id unique)
+    @JsonIgnore
     @OneToOne
     @JoinColumn(name = "reservation_id", unique = true)
     private Reservation reservation;
 
     // 1 Contrat -> N Paiement (composition) : supprimer un contrat supprime ses paiements,
     // retirer un paiement de la liste le supprime de la base (orphanRemoval)
+    @JsonIgnore
     @OneToMany(mappedBy = "contrat", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Paiement> paiements = new ArrayList<>();
 }

@@ -1,0 +1,193 @@
+### =====================================================================
+### AutoLoc API — requêtes de test (remplace Postman)
+### Lancer l'application, puis cliquer sur ▶ à gauche de chaque requête.
+### Exécuter dans l'ordre : chaque POST mémorise l'id créé ({{idVehicule}}…).
+### =====================================================================
+
+@host = http://localhost:8089
+
+### ---------------------------------------------------------------------
+### VEHICULE — CRUD complet
+### ---------------------------------------------------------------------
+
+### 1. Créer un véhicule  -> 201 Created
+POST {{host}}/api/vehicules
+Content-Type: application/json
+
+{
+  "immatriculation": "{{$random.integer(100, 999)}} TU {{$random.integer(1000, 9999)}}",
+  "marque": "Citroen",
+  "modele": "C3",
+  "categorie": "CITADINE",
+  "tarifJournalier": 85.00,
+  "statut": "DISPONIBLE"
+}
+
+> {% client.global.set("idVehicule", response.body.idVehicule); %}
+
+### 2. Lister tous les véhicules  -> 200
+GET {{host}}/api/vehicules
+
+### 3. Lire un véhicule par id  -> 200
+GET {{host}}/api/vehicules/{{idVehicule}}
+
+### 4. Modifier le véhicule  -> 200 (tous les champs simples sont remplacés)
+PUT {{host}}/api/vehicules/{{idVehicule}}
+Content-Type: application/json
+
+{
+  "immatriculation": "{{$random.integer(100, 999)}} TU {{$random.integer(1000, 9999)}}",
+  "marque": "Citroen",
+  "modele": "C3 Aircross",
+  "categorie": "SUV",
+  "tarifJournalier": 110.00,
+  "statut": "LOUE"
+}
+
+### 5. Supprimer le véhicule  -> 204 No Content
+DELETE {{host}}/api/vehicules/{{idVehicule}}
+
+### 6. Relire le véhicule supprimé  -> 404 Not Found (RestExceptionHandler)
+GET {{host}}/api/vehicules/{{idVehicule}}
+
+### ---------------------------------------------------------------------
+### AGENCE / EMPLOYE / EQUIPEMENT / CLIENT / RESERVATION / MAINTENANCE
+### ---------------------------------------------------------------------
+
+### Créer une agence
+POST {{host}}/api/agences
+Content-Type: application/json
+
+{
+  "nom": "AutoLoc Ariana",
+  "ville": "Ariana",
+  "adresse": "Avenue de la République",
+  "telephone": "71000000"
+}
+
+> {% client.global.set("idAgence", response.body.idAgence); %}
+
+### Lister les agences
+GET {{host}}/api/agences
+
+### Créer un employé (role : AGENT ou MANAGER)
+POST {{host}}/api/employes
+Content-Type: application/json
+
+{
+  "nom": "Ben Salah",
+  "prenom": "Amine",
+  "role": "AGENT"
+}
+
+### Créer un équipement (libellé unique)
+POST {{host}}/api/equipements
+Content-Type: application/json
+
+{
+  "libelle": "GPS {{$random.integer(1, 99999)}}"
+}
+
+### Créer un client (email et numPermis uniques)
+POST {{host}}/api/clients
+Content-Type: application/json
+
+{
+  "nom": "Trabelsi",
+  "prenom": "Sami",
+  "email": "sami{{$random.integer(1, 99999)}}@mail.tn",
+  "telephone": "98000000",
+  "numPermis": "P-{{$random.integer(1, 999999)}}",
+  "dateInscription": "2026-10-16"
+}
+
+> {% client.global.set("idClient", response.body.idClient); %}
+
+### Modifier le client
+PUT {{host}}/api/clients/{{idClient}}
+Content-Type: application/json
+
+{
+  "nom": "Trabelsi",
+  "prenom": "Sami",
+  "email": "sami.trabelsi{{$random.integer(1, 99999)}}@mail.tn",
+  "telephone": "22111222",
+  "numPermis": "P-{{$random.integer(1, 999999)}}",
+  "dateInscription": "2026-10-16"
+}
+
+### Créer une réservation (statut : EN_ATTENTE, CONFIRMEE, ANNULEE, TERMINEE)
+POST {{host}}/api/reservations
+Content-Type: application/json
+
+{
+  "dateDebut": "2026-11-01",
+  "dateFin": "2026-11-05",
+  "statut": "EN_ATTENTE"
+}
+
+### Créer une maintenance
+POST {{host}}/api/maintenances
+Content-Type: application/json
+
+{
+  "dateDebut": "2026-10-20",
+  "dateFin": "2026-10-22",
+  "description": "Vidange et plaquettes de frein"
+}
+
+### ---------------------------------------------------------------------
+### CONTRAT <-> PAIEMENT (fil rouge : cascade et orphanRemoval)
+### ---------------------------------------------------------------------
+
+### Créer un contrat
+POST {{host}}/api/contrats
+Content-Type: application/json
+
+{
+  "dateSignature": "2026-10-16",
+  "montantTotal": 450.00,
+  "valide": true
+}
+
+> {% client.global.set("idContrat", response.body.idContrat); %}
+
+### Ajouter un 1er paiement au contrat (mode : CARTE, ESPECES, VIREMENT)
+POST {{host}}/api/contrats/{{idContrat}}/paiements
+Content-Type: application/json
+
+{
+  "montant": 200.00,
+  "datePaiement": "2026-10-16",
+  "modePaiement": "CARTE"
+}
+
+> {% client.global.set("idPaiement", response.body.idPaiement); %}
+
+### Ajouter un 2e paiement
+POST {{host}}/api/contrats/{{idContrat}}/paiements
+Content-Type: application/json
+
+{
+  "montant": 250.00,
+  "datePaiement": "2026-10-17",
+  "modePaiement": "ESPECES"
+}
+
+### Lister les paiements du contrat  -> 2 paiements
+GET {{host}}/api/contrats/{{idContrat}}/paiements
+
+### Retirer le 1er paiement (orphanRemoval -> DELETE dans les logs)  -> 204
+DELETE {{host}}/api/contrats/{{idContrat}}/paiements/{{idPaiement}}
+
+### Relister  -> 1 seul paiement
+GET {{host}}/api/contrats/{{idContrat}}/paiements
+
+### Lister tous les paiements (lecture seule via /api/paiements)
+GET {{host}}/api/paiements
+
+### Supprimer le contrat (cascade REMOVE : ses paiements partent avec lui)  -> 204
+DELETE {{host}}/api/contrats/{{idContrat}}
+
+### Vérifier : les paiements du contrat ont disparu
+GET {{host}}/api/paiements

@@ -9,6 +9,7 @@ import tn.esprit.autoloc.domain.Paiement;
 import tn.esprit.autoloc.repository.IContratRepository;
 import tn.esprit.autoloc.repository.IPaiementRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -55,6 +56,13 @@ public class ContratServiceImpl implements IContratService {
             throw new EntityNotFoundException("Contrat introuvable : id = " + id);
         }
         contratRepository.deleteById(id);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Paiement> findPaiements(Long idContrat) {
+        // Copie dans une nouvelle liste : la collection LAZY est chargée ici, dans la transaction
+        return new ArrayList<>(findById(idContrat).getPaiements());
     }
 
     @Override
