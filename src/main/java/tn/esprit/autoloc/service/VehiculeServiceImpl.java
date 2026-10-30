@@ -4,7 +4,11 @@ import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import tn.esprit.autoloc.domain.Agence;
+import tn.esprit.autoloc.domain.Equipement;
 import tn.esprit.autoloc.domain.Vehicule;
+import tn.esprit.autoloc.repository.IAgenceRepository;
+import tn.esprit.autoloc.repository.IEquipementRepository;
 import tn.esprit.autoloc.repository.IVehiculeRepository;
 
 import java.util.List;
@@ -15,6 +19,8 @@ import java.util.List;
 public class VehiculeServiceImpl implements IVehiculeService {
 
     private final IVehiculeRepository vehiculeRepository;
+    private final IAgenceRepository agenceRepository;
+    private final IEquipementRepository equipementRepository;
 
     @Override
     @Transactional(readOnly = true)
@@ -55,5 +61,47 @@ public class VehiculeServiceImpl implements IVehiculeService {
             throw new EntityNotFoundException("Vehicule introuvable : id = " + id);
         }
         vehiculeRepository.deleteById(id);
+    }
+
+    @Override
+    public Vehicule affecterVehicule(Long idVehicule, Long idAgence) {
+        Vehicule vehicule = findById(idVehicule);
+        Agence agence = agenceRepository.findById(idAgence)
+                .orElseThrow(() -> new EntityNotFoundException("Agence introuvable : id = " + idAgence));
+        if (vehicule.getAgence() != null) {
+            vehicule.getAgence().getVehicules().remove(vehicule); // quitte l'ancienne agence
+        }
+        vehicule.setAgence(agence);                // côté propriétaire : écrit agence_id
+        agence.getVehicules().add(vehicule);       // côté inverse
+        return vehicule;                           // UPDATE vehicule SET agence_id = ? au commit
+    }
+
+    @Override
+    public Vehicule affecterEquipement(Long idVehicule, Long idEquipement) {
+        Vehicule vehicule = findById(idVehicule);
+        Equipement equipement = findEquipement(idEquipement);
+        if (!vehicule.getEquipements().add(equipement)) {   // Set : add() renvoie false si déjà présent
+            throw new IllegalStateException("L'équipement " + idEquipement
+                    + " est déjà installé sur le véhicule " + idVehicule);
+        }
+        equipement.getVehicules().add(vehicule);           // côté inverse (mappedBy)
+        return vehicule;                                   // INSERT INTO vehicule_equipement au commit
+    }
+
+    @Override
+    public Vehicule desaffecterEquipement(Long idVehicule, Long idEquipement) {
+        Vehicule vehicule = findById(idVehicule);
+        Equipement equipement = findEquipement(idEquipement);
+        if (!vehicule.getEquipements().remove(equipement)) {
+            throw new IllegalStateException("L'équipement " + idEquipement
+                    + " n'est pas installé sur le véhicule " + idVehicule);
+        }
+        equipement.getVehicules().remove(vehicule);
+        return vehicule;                                   // DELETE FROM vehicule_equipement au commit
+    }
+
+    private Equipement findEquipement(Long idEquipement) {
+        return equipementRepository.findById(idEquipement)
+                .orElseThrow(() -> new EntityNotFoundException("Equipement introuvable : id = " + idEquipement));
     }
 }

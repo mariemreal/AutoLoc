@@ -20,6 +20,12 @@ public class RestExceptionHandler {
         return ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    // règle métier non respectée (employé déjà affecté, équipement déjà installé...) -> 409 Conflict
+    @ExceptionHandler(IllegalStateException.class)
+    public ProblemDetail handleRegleMetier(IllegalStateException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     // contrainte SQL violée (champ obligatoire absent, valeur unique en double, clé étrangère) -> 409 Conflict
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ProblemDetail handleConflict(DataIntegrityViolationException ex) {
